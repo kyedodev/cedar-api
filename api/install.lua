@@ -5,19 +5,18 @@
 
 local args = {...}
 
+local quit = false
+
 local api_urls = {
   {
-    url      = "https://raw.githubusercontent.com/kyedodev/cedar-api/main/api/cedar.lua",
-    filename = "cedar.lua"
+    filename = "cedar.lua",
+    url      = "https://raw.githubusercontent.com/kyedodev/cedar-api/main/api/cedar.lua"
   },
   {
-    url      = "https://github.com/kyedodev/cedar-api/blob/main/api/update.lua",
-    filename = "update.lua"
+    filename = "update.lua",
+    url      = "https://raw.githubusercontent.com/kyedodev/cedar-api/main/api/update.lua"
   }
 }
-
-local api_url = "https://raw.githubusercontent.com/kyedodev/cedar-api/main/api/cedar.lua"
-local api_url = "https://raw.githubusercontent.com/kyedodev/cedar-api/main/api/cedar.lua"
 
 
 
@@ -27,12 +26,12 @@ if fs.exists("/cedar") then
 
   if args[1] == nil then
     print(msg)
-    shell.exit()
+    return
   end
 
   if not (string.lower(args[1]) == "-r") then
     print(msg)
-    shell.exit()
+    return
   end
 
   fs.delete("/cedar")
@@ -48,8 +47,8 @@ end
 -- make function that gets file
 function downloadFile(url, filename)
   if not http.checkURL(url) then
-    print("Invalid download url: " .. url)
-    return
+    quit = true
+    return error("Invalid download url: " .. url .. "\nCheck formatting or the HTTP API configs in ComputerCraft.cfg")
   end
 
   local res = http.get(url)
@@ -60,8 +59,8 @@ function downloadFile(url, filename)
     file.close()
     print("Downloaded " .. filename .. ".")
   else
-    print("Could not download file '" .. filename .. "' from " .. url .. "\n\nCould not finish installation.\nCheck internet connection or .")
-    shell.exit()
+    quit = true
+    return error("Could not download file '" .. filename .. "' from " .. url .. "\n\n" .. "Could not finish installation.\nCheck internet connection or if the HTTP API is enabled in ComputerCraft.cfg")
   end
 end
 
@@ -72,7 +71,8 @@ end
 -- downloading files.
 for i in pairs(api_urls) do
   downloadFile(api_urls[i].url, api_urls[i].filename)
+  if quit then return end -- return if ouchie.
 end
 
-
-os.loadAPI("/cedar/cedar.lua")
+-- update the files.
+shell.run("/cedar/update.lua")
