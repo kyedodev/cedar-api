@@ -1,7 +1,7 @@
 -- pastebin get 1ivnjzgi update
 
-local cwd      = fs.getDir(shell.getRunningProgram())
-local file     = cwd .. "/"
+local cwd    = fs.getDir(shell.getRunningProgram())
+local folder = cwd .. "/"
 
 local old_version
 
@@ -27,7 +27,7 @@ function downloadFile(url, filename)
   local res = http.get(url)
 
   if res then
-    local file = fs.open(cwd .. filename, "w")
+    local file = fs.open(folder .. filename, "w")
     file.write(res.readAll())
     file.close()
     print("Downloaded " .. filename .. ".")
@@ -59,7 +59,7 @@ end
 
 
 
-os.loadAPI(file .. "cedar.lua")
+os.loadAPI(folder .. "cedar.lua")
 
 local new_version = cedar.version
 
