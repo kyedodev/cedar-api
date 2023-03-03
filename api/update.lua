@@ -49,8 +49,8 @@ end
 for i in pairs(api) do
   -- deleting all files if they exist.
   local filename, url = api[i].filename, api[i].url
-  if fs.exists(filename) then
-    fs.delete(filename)
+  if fs.exists(folder .. filename) then
+    fs.delete(folder .. filename)
   end
 
   -- replace file with new, improved one from download :3
