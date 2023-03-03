@@ -42,8 +42,6 @@ end
 
 
 
-
-
 -- make function that gets file
 function downloadFile(url, filename)
   if not http.checkURL(url) then
@@ -63,8 +61,6 @@ function downloadFile(url, filename)
     return error("Could not download file '" .. filename .. "' from " .. url .. "\n\n" .. "Could not finish installation.\nCheck internet connection or if the HTTP API is enabled in ComputerCraft.cfg")
   end
 end
-
-
 
 
 
