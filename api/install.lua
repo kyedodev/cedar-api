@@ -74,7 +74,7 @@ for i in pairs(api_urls) do
   if quit then return end -- return if ouchie.
 end
 
-print("Running update program...\n")
+print("\nRunning update program...\n")
 
 -- update the files.
 shell.run("/cedar/update.lua")
