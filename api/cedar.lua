@@ -1,14 +1,13 @@
 -- pastebin get tcqanvzb cedar
 -- @author Kye Cedar
 
--- note: the cedar api uses ports 35410-35419.
+-- note: the cedar api uses channels 35410-35419.
 
 -----------------
 -- VARS & VALS --
 -----------------
 
-version = "0.1.4"
-PORT    = "3541"
+version = "0.1.5"
 
 LOGS    = {}
 util    = {}
@@ -35,9 +34,9 @@ ALIGN = {
 }
 
 CONNECTION = {
-  MAIN      = 0,
-  TUNNEL    = 1,
-  WAREHOUSE = 2
+  MAIN      = 35410,
+  TUNNEL    = 35411,
+  WAREHOUSE = 35412
 }
 
 
@@ -85,28 +84,28 @@ end
 -------------
 
 --- printing with extra options.
--- @param x           int,     x position.
--- @param y           int,     y position.
--- @param message     string,  content to print.
--- @param halign      ALIGN,   -1 = left, 0 = center, 1 = right.
--- @param valign      ALIGN,   -1 = bottom, 0 = center, 1 = top.
--- @param max_width   SIZE,    max width until wrap. -1 is auto.
--- @param max_height  SIZE,    max height until trim. -1 is auto.
--- @param wrap        bool,    if text should wrap.
-function etch_ext( x, y, message, halign, valign, max_width, max_height, wrap )
-  x = x or 0
-  y = y or 0
+-- @param options             table,      options of the etch.
+-- @param options.monitor     peripheral  monitor to etch.
+-- @param options.x           int,        x position.
+-- @param options.y           int,        y position.
+-- @param options.message     string,     content to print.
+-- @param options.halign      ALIGN,      -1 = left, 0 = center, 1 = right.
+-- @param options.valign      ALIGN,      -1 = bottom, 0 = center, 1 = top.
+-- @param options.max_width   SIZE,       max width until wrap. -1 is auto.
+-- @param options.max_height  SIZE,       max height until trim. -1 is auto.
+-- @param options.wrap        bool,       if text should wrap.
+function etch_ext( options )
+  local monitor    = options.monitor or term
+  local x          = util.round(options.x or 0)
+  local y          = util.round(options.y or 0)
+  local message    = option.message or ALIGN.LEFT
+  local halign     = option.halign or ALIGN.TOP
+  local valign     = option.valign or ALIGN.TOP
+  local max_width  = option.max_width or SIZE.AUTO
+  local max_height = option.max_height or SIZE.AUTO
+  local wrap       = option.wrap or true
 
-  x = util.round(x)
-  y = util.round(y)
-
-  halign     = halign or ALIGN.LEFT
-  valign     = valign or ALIGN.TOP
-  max_width  = max_width or SIZE.AUTO
-  max_height = max_height or SIZE.AUTO
-  wrap       = wrap or true
-
-  local W,H = term.getSize()
+  local W,H = monitor.getSize()
 
   -- width of the message.
   local width  = #message
@@ -140,10 +139,6 @@ function etch_ext( x, y, message, halign, valign, max_width, max_height, wrap )
     if not (max_width == SIZE.AUTO) then
       width = math.min(#message, max_width)
     end
-    if x == 1 and y == 1 then
-      term.setCursorPos(2,2)
-      term.write(width)
-    end
 
     -- calculate height by message length divided
     -- by allowed width.
@@ -175,26 +170,37 @@ function etch_ext( x, y, message, halign, valign, max_width, max_height, wrap )
 
   -- print it.
   for i = 1, height do
-    term.setCursorPos(x+offset.x,y+offset.y+i-1)
-    term.write(string.sub(message,width*(i-1),width*i))
+    monitor.setCursorPos(x+offset.x,y+offset.y+i-1)
+    monitor.write(string.sub(message,width*(i-1),width*i))
   end
 end
 
 
 
 --- simple printing.
--- @param x          int,     x position.
--- @param y          int,     y position.
--- @param message    string,  content to print.
--- @param halign     ALIGN,   -1 = left, 0 = center, 1 = right.
--- @param valign     ALIGN,   -1 = bottom, 0 = center, 1 = top.
--- @param max_width  int,     max width until wrap. -1 is auto.
-function etch( x, y, message, halign, valign, max_width )
+-- @param monitor    peripheral,  monitor to print to. use term if none.
+-- @param x          int,         x position.
+-- @param y          int,         y position.
+-- @param message    string,      content to print.
+-- @param halign     ALIGN,       -1 = left, 0 = center, 1 = right.
+-- @param valign     ALIGN,       -1 = bottom, 0 = center, 1 = top.
+-- @param max_width  int,         max width until wrap. -1 is auto.
+function etch( monitor, x, y, message, halign, valign, max_width )
   halign    = halign or ALIGN.LEFT
   valign    = valign or ALIGN.TOP
   max_width = max_width or SIZE.AUTO
 
-  etch_ext(x,y,message,halign,valign,max_width,SIZE.AUTO,true)
+  etch_ext({
+    monitor = monitor,
+    x = x,
+    y = y,
+    message = message,
+    halign = halign,
+    valign = valign,
+    max_width = max_width,
+    max_height = SIZE.AUTO,
+    wrap = true
+  })
 end
 
 
@@ -206,14 +212,39 @@ end
 local tModem
 
 --- open modem connection on given channel.
--- @param channel  number,  0-9 channel to open port, default is 0 - MAIN.
-connect["on"] = function(modem, port)
-  port   = port or CONNECTION.MAIN
-  port   = util.round(port) -- round port to int.
+-- @param modem  peripheral,  wrapped modem peripheral
+link["connect"] = function(modem)
+  tModem = modem
+  return link
+end
 
-  if not (port > -1 or port < 10) then
-    log("Can't open connection unless port is 0-9.\n( will be converted to 35410-35419. )", LOG_TYPE.ERROR)
+--- check if channel is open on modem.
+-- @param channel  int,  channel to check.
+-- @returns {bool} if channel is open.
+link["isOpen"] = function()
+end
+
+--- open channel on connected modem.
+-- @param channel  int,  channel to open.
+-- @return {modem}
+link["open"] = function(channel)
+  if tModem == nil then
+    log("Modem not connected. Use link.connect(modem).", LOG_TYPE.ERROR)
   end
 
-  tModem = modem
+  channel = channel or CONNECTION.MAIN
+  channel = math.floor(channel)
+
+  if not (channel > -1 or channel < 65535) then
+    log("Not a valid channel. ( 0-65535 )", LOG_TYPE.ERROR)
+  end
+
+  if tModem.isOpen(channel) then
+    log("Channel " .. channel .. " is already open.", LOG_TYPE.WARN)
+  end
+
+  tModem.open(channel)
+  log("Opened channel " .. channel .. ".")
+
+  return link
 end
