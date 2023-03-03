@@ -1,11 +1,13 @@
 -- pastebin get tcqanvzb cedar
 -- @author Kye Cedar
 
+-- note: the cedar api uses ports 35410-35419.
+
 -----------------
 -- VARS & VALS --
 -----------------
 
-version = "0.1.3"
+version = "0.1.4"
 PORT    = "3541"
 
 LOGS    = {}
@@ -50,6 +52,11 @@ CONNECTION = {
 function log( message, log_type )
   log_type = log_type or LOG_TYPE.INFO
   table.insert(LOGS, message)
+
+  -- throw error is error
+  if log_type == LOG_TYPE.ERROR then
+    error(message)
+  end
 end
 
 
@@ -179,15 +186,15 @@ end
 -- @param x          int,     x position.
 -- @param y          int,     y position.
 -- @param message    string,  content to print.
--- @param align      int,     -1 = left, 0 = center, 1 = right.
+-- @param halign     ALIGN,   -1 = left, 0 = center, 1 = right.
+-- @param valign     ALIGN,   -1 = bottom, 0 = center, 1 = top.
 -- @param max_width  int,     max width until wrap. -1 is auto.
--- @param wrap       bool,    if text should wrap.
-function etch( x, y, message, align, max_width, wrap )
-  align     = align or ALIGN.LEFT
+function etch( x, y, message, halign, valign, max_width )
+  halign    = halign or ALIGN.LEFT
+  valign    = valign or ALIGN.TOP
   max_width = max_width or SIZE.AUTO
-  wrap      = wrap or true
 
-  etch_ext(x,y,message,align,ALIGN.TOP,max_width,SIZE.AUTO,wrap)
+  etch_ext(x,y,message,halign,valign,max_width,SIZE.AUTO,true)
 end
 
 
@@ -196,5 +203,17 @@ end
 -- MODEM --
 -----------
 
-connect["as"] = function()
+local tModem
+
+--- open modem connection on given channel.
+-- @param channel  number,  0-9 channel to open port, default is 0 - MAIN.
+connect["on"] = function(modem, port)
+  port   = port or CONNECTION.MAIN
+  port   = util.round(port) -- round port to int.
+
+  if not (port > -1 or port < 10) then
+    log("Can't open connection unless port is 0-9.\n( will be converted to 35410-35419. )", LOG_TYPE.ERROR)
+  end
+
+  tModem = modem
 end
