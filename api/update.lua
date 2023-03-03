@@ -5,34 +5,30 @@ local folder = cwd .. "/"
 
 local old_version
 
+local url = "https://raw.githubusercontent.com/kyedodev/cedar-api/main/api/"
+
 local api = {
-  {
-    filename = "cedar.lua",
-    url      = "https://raw.githubusercontent.com/kyedodev/cedar-api/main/api/cedar.lua"
-  },
-  {
-    filename = "update.lua",
-    url      = "https://raw.githubusercontent.com/kyedodev/cedar-api/main/api/update.lua"
-  }
+  "cedar.lua",
+  "update.lua"
 }
 
 
 
 -- fetches file from internet.
-function downloadFile(url, filename)
-  if not http.checkURL(url) then
+function downloadFile(filepath)
+  if not http.checkURL(url .. filepath) then
     return error("Invalid download url: " .. url .. "\nCheck formatting or the HTTP API configs in ComputerCraft.cfg")
   end
 
-  local res = http.get(url)
+  local res = http.get(url .. filepath)
 
   if res then
-    local file = fs.open(folder .. filename, "w")
+    local file = fs.open(folder .. filepath, "w")
     file.write(res.readAll())
     file.close()
-    print("Downloaded " .. filename .. ".")
+    print("Downloaded " .. filepath .. ".")
   else
-    return error("Could not download file '" .. filename .. "' from " .. url .. "\n\n" .. "Could not finish installation.\nCheck internet connection or if the HTTP API is enabled in ComputerCraft.cfg")
+    return error("Could not download file '" .. filepath .. "' from " .. url .. filepath .. "\n\n" .. "Could not finish installation.\nCheck internet connection or if the HTTP API is enabled in ComputerCraft.cfg")
   end
 end
 
@@ -48,13 +44,13 @@ end
 
 for i in pairs(api) do
   -- deleting all files if they exist.
-  local filename, url = api[i].filename, api[i].url
-  if fs.exists(folder .. filename) then
-    fs.delete(folder .. filename)
+  local filepath = api[i]
+  if fs.exists(folder .. filepath) then
+    fs.delete(folder .. filepath)
   end
 
   -- replace file with new, improved one from download :3
-  downloadFile(url, filename)
+  downloadFile(filepath)
 end
 
 
